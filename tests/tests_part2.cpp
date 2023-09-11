@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include "../cs225/catch/catch.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -7,147 +7,41 @@
 
 #include "../cs225/PNG.h"
 #include "../cs225/HSLAPixel.h"
-
-#include "../Animation.h"
-#include "../FloodFilledImage.h"
-
-#include "../imageTraversal/DFS.h"
-#include "../imageTraversal/BFS.h"
-
-#include "../colorPicker/GradientColorPicker.h"
-#include "../colorPicker/GridColorPicker.h"
-#include "../colorPicker/RainbowColorPicker.h"
-#include "../colorPicker/SolidColorPicker.h"
-#include "../colorPicker/MyColorPicker.h"
+#include "../maptiles.h"
+#include "../mosaiccanvas.h"
 
 using namespace cs225;
 
 
-TEST_CASE("Illini I - FloodFilledImage, DFS", "[weight=3][part=2]") {
-  PNG png;       png.readFromFile("tests/i.png");
-  PNG expected;  expected.readFromFile("tests/i-rainbow-dfs.png");
-  PNG expected2; expected2.readFromFile("tests/i-rainbow-dfs-2.png");
-  
-  FloodFilledImage image(png);
-  DFS dfs(png, Point(40, 40), 0.05);
-  RainbowColorPicker rainbow(0.05);
-  image.addFloodFill( dfs, rainbow );
+TEST_CASE("Creates a basic MosaicCanvas (gridtest)", "[weight=5][part=2]") {
+  // Read `tests/gridtest.png` from disk
+  PNG sourcePNG;
+  sourcePNG.readFromFile("tests/gridtest.png");
+  SourceImage source(sourcePNG, 8);
 
-  Animation animation = image.animate(1000);
-  
-  REQUIRE( animation.frameCount() > 2 );
-  PNG secondFrame = animation.getFrame(1);
-  PNG lastFrame = animation.getFrame( animation.frameCount() - 1 );
+  // Create a list of images to choose from to make our mosaic.  As a basic
+  // test, we'll use images of one pixel colored either red, green, or blue.
+  vector<TileImage> tileList;
 
-  secondFrame.writeToFile("i-rainbow-dfs-2.png");
-  lastFrame.writeToFile("i-rainbow-dfs.png");
-  animation.write("i-rainbow-dfs.gif");
-  INFO("Files written to i-rainbow-dfs-* for debugging.");
-  
-  REQUIRE( secondFrame == expected2 );
-  REQUIRE( lastFrame == expected );
-}
+  PNG a(1, 1);  a.getPixel(0, 0) = HSLAPixel(0, 1, 0.5);   // red
+  PNG b(1, 1);  b.getPixel(0, 0) = HSLAPixel(120, 1, 0.5); // green
+  PNG c(1, 1);  c.getPixel(0, 0) = HSLAPixel(240, 1, 0.5); // blue
 
-TEST_CASE("Illini I - FloodFilledImage, BFS", "[weight=3][part=2]") {
-  PNG png;      png.readFromFile("tests/i.png");
-  PNG expected; expected.readFromFile("tests/i-rainbow-bfs.png");
-  PNG expected2; expected2.readFromFile("tests/i-rainbow-bfs-2.png");
-  
-  FloodFilledImage image(png);
-  BFS bfs(png, Point(40, 40), 0.05);
-  RainbowColorPicker rainbow(0.05);
-  image.addFloodFill( bfs, rainbow );
+  tileList.push_back(TileImage(a));
+  tileList.push_back(TileImage(b));
+  tileList.push_back(TileImage(c));
 
-  Animation animation = image.animate(1000);
+  // Draw the mosaic!
+  MosaicCanvas* canvas = mapTiles(source, tileList);
+  REQUIRE( canvas != NULL );
 
-  REQUIRE( animation.frameCount() > 2 );
-  PNG secondFrame = animation.getFrame(1);
-  PNG lastFrame = animation.getFrame( animation.frameCount() - 1 );
+  PNG actual = canvas->drawMosaic(10);
+  PNG expected;  expected.readFromFile("tests/gridtest-expected.png");
 
-  secondFrame.writeToFile("i-rainbow-bfs-2.png");
-  lastFrame.writeToFile("i-rainbow-bfs.png");
-  animation.write("i-rainbow-bfs.gif");
-  INFO("Files written to i-rainbow-bfs-* for debugging.");
-  
-  REQUIRE( secondFrame == expected2 );
-  REQUIRE( lastFrame == expected );
-}
+  // Save and check for correctness
+  actual.writeToFile("gridtest-actual.png");
+  INFO("Saved `actual` as gridtest-actual.png.");
 
-
-TEST_CASE("Garfield - FloodFilledImage, BFS", "[weight=3][part=2]") {
-  PNG png;      png.readFromFile("tests/garfield.png");
-  PNG expected; expected.readFromFile("tests/garfield-rainbow-bfs.png");
-  PNG expected2; expected2.readFromFile("tests/garfield-rainbow-bfs-2.png");
-  
-  FloodFilledImage image(png);
-  BFS bfs(png, Point(61, 61), 0.05);
-  RainbowColorPicker rainbow(0.1);
-  image.addFloodFill( bfs, rainbow );
-
-  Animation animation = image.animate(1000);
-
-  REQUIRE( animation.frameCount() > 2 );
-  PNG secondFrame = animation.getFrame(1);
-  PNG lastFrame = animation.getFrame( animation.frameCount() - 1 );
-
-  secondFrame.writeToFile("garfield-rainbow-bfs-2.png");
-  lastFrame.writeToFile("garfield-rainbow-bfs.png");
-  animation.write("garfield-rainbow-bfs.gif");
-  INFO("Files written to garfield-rainbow-dfs-* for debugging.");
-  
-  REQUIRE( secondFrame == expected2 );
-  REQUIRE( lastFrame == expected );
-}
-
-
-TEST_CASE("PacMan - FloodFilledImage, DFS", "[weight=3][part=2]") {
-  PNG png;      png.readFromFile("tests/pacman.png");
-  PNG expected; expected.readFromFile("tests/pacman-solid-dfs.png");
-  PNG expected2; expected2.readFromFile("tests/pacman-solid-dfs-2.png");
-  
-  FloodFilledImage image(png);
-  DFS dfs(png, Point(100, 50), 0.2);
-  HSLAPixel color(231, 1, 0.5);
-  SolidColorPicker solid(color);
-  image.addFloodFill( dfs, solid );
-
-  Animation animation = image.animate(1000);
-
-  REQUIRE( animation.frameCount() > 2 );
-  PNG secondFrame = animation.getFrame(1);
-  PNG lastFrame = animation.getFrame( animation.frameCount() - 1 );
-
-  secondFrame.writeToFile("pacman-solid-dfs-2.png");
-  lastFrame.writeToFile("pacman-solid-dfs.png");
-  animation.write("pacman-solid-dfs.gif");
-  INFO("Files written to pacman-solid-dfs-* for debugging.");
-  
-  REQUIRE( secondFrame == expected2 );
-  REQUIRE( lastFrame == expected );
-}
-
-TEST_CASE("PacMan - FloodFilledImage, BFS", "[weight=3][part=2]") {
-  PNG png;      png.readFromFile("tests/pacman.png");
-  PNG expected; expected.readFromFile("tests/pacman-solid-bfs.png");
-  PNG expected2; expected2.readFromFile("tests/pacman-solid-bfs-2.png");
-  
-  FloodFilledImage image(png);
-  BFS bfs(png, Point(100, 50), 0.2);
-  HSLAPixel color(231, 1, 0.5);
-  SolidColorPicker solid(color);
-  image.addFloodFill( bfs, solid );
-
-  Animation animation = image.animate(1000);
-
-  REQUIRE( animation.frameCount() > 2 );
-  PNG secondFrame = animation.getFrame(1);
-  PNG lastFrame = animation.getFrame( animation.frameCount() - 1 );
-
-  secondFrame.writeToFile("pacman-solid-bfs-2.png");
-  lastFrame.writeToFile("pacman-solid-bfs.png");
-  animation.write("pacman-solid-bfs.gif");
-  INFO("Files written to pacman-solid-bfs-* for debugging.");
-
-  REQUIRE( secondFrame == expected2 );
-  REQUIRE( lastFrame == expected );
+  REQUIRE( actual == expected );
+  delete canvas; canvas = NULL;
 }
