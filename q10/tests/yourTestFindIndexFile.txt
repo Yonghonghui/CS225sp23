@@ -1,0 +1,14 @@
+testing FindIndex with textEasy.txt
+Key: 'to' Value: 0
+Key: 'belong' Value: 0
+
+testing FindIndex with textHard.txt
+Key: 'has' Value: 0
+Key: 'been' Value: 0
+Key: 'even' Value: 0
+
+testing FindIndex with textVeryHard.txt
+Key: 'threet' Value: 0
+Key: 'ten' Value: 0
+Key: 'enu' Value: 0
+
